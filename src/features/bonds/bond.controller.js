@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const request = require('../../helpers/request.helper');
 
-
 router.get('/', async (req, res) => {
     try {
+        console.log('oie');
         const bonds = await request('GET', 'http://jurus.com.br/api/v1/bonds');
-        return res.send({ data: bonds });
+        return res.send({ data: bonds.body });
     } catch (error) {
         return res.send({ error })
     }
