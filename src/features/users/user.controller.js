@@ -5,56 +5,71 @@ const bcrypt = require('bcrypt');
 
 
 router.get('/', async (req, res) => {
-    users.find({}, (err, data) => {
-        if (err) return res.send({ error: 'Error trying to get users.' });
-        return res.send(data);
-    })
+    try {
+        const user = await user.find({});
+        return res.send(users);
+    } catch (err) {
+        return res.send({ error: 'Erro ao buscar usuários.' });
+    }
 })
 
 router.post('/', (req, res) => {
     const { email, password, name, type } = req.body;
 
     if (!email) {
-        return res.send({ error: 'The email field was not sent.' })
+        return res.send({ error: 'O campo email não foi enviado.' })
     }
     if (!password) {
-        return res.send({ error: 'The password field was not sent.' })
+        return res.send({ error: 'O campo password não foi enviado.' })
     }
     if (!name) {
-        return res.send({ error: 'The name field was not sent.' })
+        return res.send({ error: 'O campo name não foi enviado.' })
     }
     if (!type) {
-        return res.send({ error: 'The type field was not sent.' })
+        return res.send({ error: 'O campo tipo não foi enviado..' })
     }
 
-    users.findOne({ email }, (err, data) => {
-        if (err) return res.send({ error: 'Error trying to get user.' });
-        if (data) return res.send({ error: 'User already registered.' });
+    try {
+        if (await users.findOne({ email })) {
+            return res.send({ error: 'Usuário já registrado.' })
+        }
 
-        users.create(req.body, (err, data) => {
-            if (err) return res.send({ error: 'Error trying to create user' });
+        const user = await users.create(req.body);
+        user.password = null;
+        return res.send(user);
 
-            data.password = null;
-            return res.send(data);
-        })
-    })
+    } catch (err) {
+        return res.send({ error: 'Erro ao buscar usuário' });
+    }
 
 })
 
 router.post('/auth', (req, res) => {
     const { email, password } = req.body;
 
-    if(!email || !password) return res.send({ error: ''});
+    if (!email || !password) return res.send({ error: '' });
+    try {
+        const user = await users.findOne({ email }).select('+password');
+        if (!user) {
+            return res.send({ error: 'Usuário não registrado.' })
+        }
 
-    users.findOne({email}, (err, data) => {
-        if (err) return res.send({error: 'Error trying to get user.'});
-        if (!data) return res.send({error: 'User not registered'});
+        const pass_ok = await bcrypt.compare(password, user.password);
 
-        bcrypt.compare(password, data.password, (err, same) => {
-            if (!same) return res.send({error: 'Error trying to authenticating the user.'});
-            return res.send(data);
-        })
-    }).select('+password')
+        if (!pass_ok) {
+            return res.send({ error: 'Erro ao autenticar usuário.' })
+        }
+
+        user.password = null;
+        return res.send({ user, token: createUserToken(user._id) })
+
+    } catch (err) {
+
+    }
 });
+
+const createUserToken = userId => {
+    return jwt.sign({ id: userId }, process.env.JWT_PASS), { expiresIn: '7d' };
+}
 
 module.exports = router;
