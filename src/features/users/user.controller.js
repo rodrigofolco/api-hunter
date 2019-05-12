@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const users = require('./user.model');
 const bcrypt = require('bcrypt');
-
+const jwt = require('jsonwebtoken');
 
 router.get('/', async (req, res) => {
     try {
@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     const { email, password, name, type } = req.body;
 
     if (!email) {
@@ -36,7 +36,7 @@ router.post('/', (req, res) => {
 
         const user = await users.create(req.body);
         user.password = null;
-        return res.send(user);
+        return res.send({ user, token: createUserToken(user._id) });
 
     } catch (err) {
         return res.send({ error: 'Erro ao buscar usuário' });
@@ -44,7 +44,7 @@ router.post('/', (req, res) => {
 
 })
 
-router.post('/auth', (req, res) => {
+router.post('/auth', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) return res.send({ error: '' });
@@ -54,22 +54,22 @@ router.post('/auth', (req, res) => {
             return res.send({ error: 'Usuário não registrado.' })
         }
 
-        const pass_ok = await bcrypt.compare(password, user.password);
+        const pass_ok = await bcrypt.compare(password.toString(), user.password);
 
         if (!pass_ok) {
             return res.send({ error: 'Erro ao autenticar usuário.' })
         }
-
         user.password = null;
         return res.send({ user, token: createUserToken(user._id) })
 
     } catch (err) {
-
+        console.log('err :', err);
+        return res.send({ error: 'Erro ao buscar usuário' });
     }
 });
 
 const createUserToken = userId => {
-    return jwt.sign({ id: userId }, process.env.JWT_PASS), { expiresIn: '7d' };
+    return jwt.sign({ id: userId }, process.env.JWT_PASS, { expiresIn: '7d' });
 }
 
 module.exports = router;
