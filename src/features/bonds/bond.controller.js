@@ -1,29 +1,40 @@
 const express = require('express');
 const router = express.Router();
+const bonds = require('./bond.model');
 const request = require('../../helpers/request.helper');
 const authMiddleware = require('../../../middleware/auth');
 
 router.get('/', async (req, res) => {
     try {
-        let bonds = await request('GET', 'http://jurus.com.br/api/v1/bonds');
+        const bonds = await request('GET', 'http://jurus.com.br/api/v1/bonds');
 
-        const { limit } = req.query;
-        if (limit) {
-            bonds = bonds.slice(0, limit);  
-        }
+        // const sleep = (milliseconds) => {
+        //     return new Promise(resolve => setTimeout(resolve, milliseconds))
+        //   }
 
-        return res.send({ data: bonds.body });
+        return res.send({ data: bonds.body.bonds });
     } catch (error) {
-        return res.send({ error })
+        return res.status(500).send({ error: 'Error trying to get bonds.' });
     }
 })
 
-router.post('/', (req, res) => {
-    const { usuario } = req.body;
-    if (!usuario) {
-        return res.send({ message: "Voce deve mandar um usaurio" })
+router.post('/', async (req, res) => {
+    try {
+        const { owner, bond } = req.body;
+        if (!owner) {
+            return res.status(400).send({ error: 'Owner field is required.' });
+        }
+
+        if (!bond) {
+            return res.status(400).send({ error: 'Bond field is required.' })
+        }
+
+        const data = await bonds.create(req.body);
+        return res.send({ data })
+    } catch (error) {
+
     }
-    return res.send({ message: 'sucesso' })
+
 })
 
 module.exports = router;

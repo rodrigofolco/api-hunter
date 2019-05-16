@@ -11,6 +11,7 @@ const UserSchema = new Schema({
     name: { type: String, required: true },
     type: { type: String, required: true, enum: ['ADMIN', 'SUBSCRIBER'], uppercase: true }
 });
+
 UserSchema.pre('save', function (next) {
     let user = this;
     if (!user.isModified('password')) return next();

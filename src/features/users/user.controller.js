@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
         const user = await user.find({});
         return res.send(users);
     } catch (err) {
-        return res.send({ error: 'Erro ao buscar usuários.' });
+        return res.send({ error: 'Error trying to get users.' });
     }
 })
 
@@ -17,21 +17,21 @@ router.post('/', async (req, res) => {
     const { email, password, name, type } = req.body;
 
     if (!email) {
-        return res.send({ error: 'O campo email não foi enviado.' })
+        return res.status(400).send({ error: 'Email field is required.' })
     }
     if (!password) {
-        return res.send({ error: 'O campo password não foi enviado.' })
+        return res.status(400).send({ error: 'Password field is required.' })
     }
     if (!name) {
-        return res.send({ error: 'O campo name não foi enviado.' })
+        return res.status(400).send({ error: 'Name field is required.' })
     }
     if (!type) {
-        return res.send({ error: 'O campo tipo não foi enviado..' })
+        return res.status(400).send({ error: 'Type field is required.' })
     }
 
     try {
         if (await users.findOne({ email })) {
-            return res.send({ error: 'Usuário já registrado.' })
+            return res.status(400).send({ error: 'User already registered.' })
         }
 
         const user = await users.create(req.body);
@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
         return res.send({ user, token: createUserToken(user._id) });
 
     } catch (err) {
-        return res.send({ error: 'Erro ao buscar usuário' });
+        return res.status(500).send({ error: 'Error trying to get user.' });
     }
 
 })
@@ -51,20 +51,19 @@ router.post('/auth', async (req, res) => {
     try {
         const user = await users.findOne({ email }).select('+password');
         if (!user) {
-            return res.send({ error: 'Usuário não registrado.' })
+            return res.status(400).send({ error: 'User not found.' })
         }
 
         const pass_ok = await bcrypt.compare(password.toString(), user.password);
 
         if (!pass_ok) {
-            return res.send({ error: 'Erro ao autenticar usuário.' })
+            return res.status(401).send({ error: 'Invalid password.' })
         }
         user.password = null;
         return res.send({ user, token: createUserToken(user._id) })
 
     } catch (err) {
-        console.log('err :', err);
-        return res.send({ error: 'Erro ao buscar usuário' });
+        return res.send({ error: 'Error trying to authenticate user.' });
     }
 });
 
