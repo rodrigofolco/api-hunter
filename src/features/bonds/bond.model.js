@@ -5,7 +5,8 @@ const mongooseTimestamp = require('mongoose-timestamp');
 
 const UserSchema = new Schema({
     owner: { type: mongoose.Schema.ObjectId, required: true },
-    bond: { type: String, required: true, ref: 'User' }
+    bond: { type: String, required: true, ref: 'User' },
+    value: { type: Number, default: 0 }
 });
 
 UserSchema.plugin(mongooseDelete, { overrideMethods: true });
